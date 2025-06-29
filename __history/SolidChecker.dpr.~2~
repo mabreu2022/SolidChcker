@@ -1,0 +1,27 @@
+program SolidChecker;
+
+uses
+  System.SysUtils,
+  System.Generics.Collections,
+  CodeAnalyzer in 'CodeAnalyzer.pas';
+
+var
+  Violations: TViolationList;
+begin
+  if ParamCount < 1 then
+  begin
+    Writeln('Uso: SolidChecker.exe <caminho_dos_arquivos_pas>');
+    Exit;
+  end;
+
+  Violations := TViolationList.Create;
+  try
+    AnalyzeFolder(ParamStr(1), Violations);
+    GenerateHtmlReport(Violations, 'report\solid_report.html');
+
+    if Violations.Count > 0 then
+      Halt(1); // Faz o Jenkins saber que houve problemas
+  finally
+    Violations.Free;
+  end;
+end.

@@ -1,0 +1,46 @@
+unit HtmlReporter;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, CodeAnalyzer;
+
+procedure GenerateHtmlReport(const Violations: TViolationList; const OutputPath: string);
+
+implementation
+
+procedure GenerateHtmlReport(const Violations: TViolationList; const OutputPath: string);
+var
+  HTML: TStringList;
+  V: TViolation;
+begin
+  HTML := TStringList.Create;
+  try
+    HTML.Add('<html>');
+    HTML.Add('<head><title>Relatório SOLID</title>');
+    HTML.Add('<style>');
+    HTML.Add('table { border-collapse: collapse; width: 100%; }');
+    HTML.Add('th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }');
+    HTML.Add('th { background-color: #f2f2f2; }');
+    HTML.Add('</style>');
+    HTML.Add('</head><body>');
+    HTML.Add('<h2>Relatório de Violações dos Princípios SOLID</h2>');
+    HTML.Add('<table>');
+    HTML.Add('<tr><th>Arquivo</th><th>Procedimento</th><th>Linha</th><th>Princípio</th><th>Descrição</th></tr>');
+
+    for V in Violations do
+    begin
+      HTML.Add(Format('<tr><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>',
+        [V.FileName, V.ProcedureName, V.LineNumber, V.PrincipleViolated, V.Description]));
+    end;
+
+    HTML.Add('</table>');
+    HTML.Add('</body></html>');
+
+    HTML.SaveToFile(OutputPath);
+  finally
+    HTML.Free;
+  end;
+end;
+
+end.

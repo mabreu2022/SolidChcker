@@ -1,0 +1,109 @@
+unit CodeAnalyzer;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, System.Generics.Collections;
+
+type
+  TViolation = record
+    FileName: string;
+    ProcedureName: string;
+    LineNumber: Integer;
+    PrincipleViolated: string;
+    Description: string;
+  end;
+
+  TViolationList = TList<TViolation>;
+
+procedure AnalyzeFolder(const FolderPath: string; Violations: TViolationList);
+
+implementation
+
+uses
+  System.IOUtils, System.RegularExpressions;
+
+procedure AddViolation(const Violations: TViolationList; const FileName, ProcName: string;
+  LineNumber: Integer; const Principle, Description: string);
+var
+  V: TViolation;
+begin
+  V.FileName := FileName;
+  V.ProcedureName := ProcName;
+  V.LineNumber := LineNumber;
+  V.PrincipleViolated := Principle;
+  V.Description := Description;
+  Violations.Add(V);
+end;
+
+procedure AnalyzeFile(const FilePath: string; Violations: TViolationList);
+var
+  Lines: TStringList;
+  I: Integer;
+  Line: string;
+  CurrentProcName: string;
+begin
+  Lines := TStringList.Create;
+  try
+    Lines.LoadFromFile(FilePath);
+    CurrentProcName := '';
+
+    for I := 0 to Lines.Count - 1 do
+    begin
+      Line := Trim(Lines[I]);
+
+      // Detectar cabeçalho de método ou função
+      if TRegEx.IsMatch(Line, '^(procedure|function)\s+\w+\.\w+', [roIgnoreCase]) then
+        CurrentProcName := TRegEx.Match(Line, '\w+\.\w+').Value
+      else if Line = 'end;' then
+        CurrentProcName := ''; // Reiniciar no fim do bloco
+
+      // SRP
+      if TRegEx.IsMatch(Line, '^procedure\s') and (Lines.Count > 100) then
+        AddViolation(Violations, FilePath, CurrentProcName, I + 1, 'SRP',
+          'Classe com muitos métodos, possível violação do SRP.');
+
+      // OCP
+      if TRegEx.IsMatch(Line, '^(if|case)\s', [roIgnoreCase]) then
+        AddViolation(Violations, FilePath, CurrentProcName, I + 1, 'OCP',
+          'Uso de estruturas condicionais, possível violação do OCP.');
+
+      // DIP – instanciação direta de classes concretas
+      if TRegEx.IsMatch(Line, '\bCreate\b') and
+         TRegEx.IsMatch(Line, '\bT[A-Z]\w*\b') and
+         not TRegEx.IsMatch(Line, '\bI[A-Z]\w*\b') then
+        AddViolation(Violations, FilePath, CurrentProcName, I + 1, 'DIP',
+          'Instanciação direta de classe concreta. Considere usar injeção de dependência.');
+
+      // DIP – dependência de unidade concreta
+      if TRegEx.IsMatch(Line, '^uses\s', [roIgnoreCase]) and
+         Line.ToLower.Contains('u') then
+        AddViolation(Violations, FilePath, CurrentProcName, I + 1, 'DIP',
+          'Importação de unidade concreta. Avalie depender de abstrações.');
+
+      // ISP – método lança exceção por não implementar
+      if TRegEx.IsMatch(Line.ToLower, '\braise\b') and
+         (Line.ToLower.Contains('notimplemented') or Line.ToLower.Contains('notsupported')) then
+        AddViolation(Violations, FilePath, CurrentProcName, I + 1, 'ISP',
+          'Método sinaliza "não implementado". Classe pode depender de interface muito ampla.');
+
+      // LSP – override que lança exceção
+      if TRegEx.IsMatch(Line.ToLower, '\boverride\b') and
+         TRegEx.IsMatch(Line.ToLower, '\braise\s+[a-zA-Z]') then
+        AddViolation(Violations, FilePath, CurrentProcName, I + 1, 'LSP',
+          'Método sobrescrito lança exceção. Pode violar substituibilidade de Liskov.');
+    end;
+  finally
+    Lines.Free;
+  end;
+end;
+
+procedure AnalyzeFolder(const FolderPath: string; Violations: TViolationList);
+var
+  FileName: string;
+begin
+  for FileName in TDirectory.GetFiles(FolderPath, '*.pas', TSearchOption.soAllDirectories) do
+    AnalyzeFile(FileName, Violations);
+end;
+
+end.

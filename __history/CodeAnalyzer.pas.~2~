@@ -1,0 +1,80 @@
+unit CodeAnalyzer;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, System.Generics.Collections;
+
+type
+  TViolation = record
+    FileName: string;
+    ProcedureName: string;
+    LineNumber: Integer;
+    PrincipleViolated: string;
+    Description: string;
+  end;
+
+  TViolationList = TList<TViolation>;
+
+procedure AnalyzeFolder(const FolderPath: string; Violations: TViolationList);
+
+implementation
+
+uses
+  System.IOUtils, System.RegularExpressions;
+
+procedure AnalyzeFile(const FilePath: string; Violations: TViolationList);
+var
+  Lines: TStringList;
+  I: Integer;
+  Line: string;
+  Violation: TViolation;
+begin
+  Lines := TStringList.Create;
+  try
+    Lines.LoadFromFile(FilePath);
+
+    for I := 0 to Lines.Count - 1 do
+    begin
+      Line := Trim(Lines[I]);
+
+      // Heurística: se houver muitos métodos na mesma classe
+      if TRegEx.IsMatch(Line, '^procedure\s') then
+      begin
+        if I > 100 then
+        begin
+          Violation.FileName := FilePath;
+          Violation.ProcedureName := '';
+          Violation.LineNumber := I + 1;
+          Violation.PrincipleViolated := 'SRP';
+          Violation.Description := 'Classe com muitos métodos, possível violação do SRP.';
+          Violations.Add(Violation);
+        end;
+      end;
+
+      if TRegEx.IsMatch(Line, '^(if|case)\s') then
+      begin
+        Violation.FileName := FilePath;
+        Violation.ProcedureName := '';
+        Violation.LineNumber := I + 1;
+        Violation.PrincipleViolated := 'OCP';
+        Violation.Description := 'Uso de estruturas condicionais, possível violação do OCP.';
+        Violations.Add(Violation);
+      end;
+    end;
+  finally
+    Lines.Free;
+  end;
+end;
+
+procedure AnalyzeFolder(const FolderPath: string; Violations: TViolationList);
+var
+  FileName: string;
+begin
+  for FileName in TDirectory.GetFiles(FolderPath, '*.pas', TSearchOption.soAllDirectories) do
+  begin
+    AnalyzeFile(FileName, Violations);
+  end;
+end;
+
+end.

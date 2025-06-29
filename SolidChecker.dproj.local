@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+  <Transactions>
+    <Transaction>2025/06/29 10:39:52.694,C:\FONTES\SolidChecker\SolidChecker.dproj=C:\Users\Mauricio Abreu\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>2025/06/29 10:40:07.426,=C:\FONTES\SolidChecker\Unit1.pas</Transaction>
+    <Transaction>2025/06/29 10:40:57.903,C:\FONTES\SolidChecker\CodeAnalyzer.pas=C:\FONTES\SolidChecker\Unit1.pas</Transaction>
+    <Transaction>2025/06/29 10:41:23.854,=C:\FONTES\SolidChecker\Unit1.pas</Transaction>
+    <Transaction>2025/06/29 10:41:41.248,C:\FONTES\SolidChecker\HtmlReporter.pas=C:\FONTES\SolidChecker\Unit1.pas</Transaction>
+    <Transaction>2025/06/29 10:53:28.211,=C:\FONTES\SolidChecker\Unit1.pas</Transaction>
+    <Transaction>2025/06/29 10:53:38.804,C:\FONTES\SolidChecker\JsonReporter.pas=C:\FONTES\SolidChecker\Unit1.pas</Transaction>
+  </Transactions>
+</BorlandProject>
